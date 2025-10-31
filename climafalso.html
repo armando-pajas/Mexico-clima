@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clima actual de los Estados de México 🇲🇽</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Clima actual en los Estados de México </h1>
+
+  <div class="buscador-container">
+    <input type="text" id="buscador" placeholder="Escribe el nombre del estado...">
+    <button id="btnBuscar">🔍</button>
+  </div>
+
+  <div id="contenedor" class="grid"></div>
+
+  <script>
+    const estados = [
+      { nombre: "Aguascalientes", lat: 21.8823, lon: -102.2826 },
+      { nombre: "Baja California", lat: 32.6519, lon: -115.4683 },
+      { nombre: "Baja California Sur", lat: 24.1444, lon: -110.3005 },
+      { nombre: "Campeche", lat: 19.8450, lon: -90.5230 },
+      { nombre: "Chiapas", lat: 16.7597, lon: -93.1131 },
+      { nombre: "Chihuahua", lat: 28.6353, lon: -106.0889 },
+      { nombre: "Coahuila", lat: 25.4380, lon: -100.9737 },
+      { nombre: "Colima", lat: 19.2433, lon: -103.7250 },
+      { nombre: "Durango", lat: 24.0277, lon: -104.6532 },
+      { nombre: "Guanajuato", lat: 21.0173, lon: -101.2560 },
+      { nombre: "Guerrero", lat: 17.5515, lon: -99.5058 },
+      { nombre: "Hidalgo", lat: 20.1169, lon: -98.7333 },
+      { nombre: "Jalisco", lat: 20.6597, lon: -103.3496 },
+      { nombre: "Estado de México", lat: 19.2841, lon: -99.6557 },
+      { nombre: "Michoacán", lat: 19.7008, lon: -101.1844 },
+      { nombre: "Morelos", lat: 18.9186, lon: -99.2340 },
+      { nombre: "Nayarit", lat: 21.5085, lon: -104.8957 },
+      { nombre: "Nuevo León", lat: 25.6866, lon: -100.3161 },
+      { nombre: "Oaxaca", lat: 17.0732, lon: -96.7266 },
+      { nombre: "Puebla", lat: 19.0414, lon: -98.2063 },
+      { nombre: "Querétaro", lat: 20.5888, lon: -100.3899 },
+      { nombre: "Quintana Roo", lat: 18.5100, lon: -88.3030 },
+      { nombre: "San Luis Potosí", lat: 22.1565, lon: -100.9855 },
+      { nombre: "Sinaloa", lat: 24.8081, lon: -107.3940 },
+      { nombre: "Sonora", lat: 29.0729, lon: -110.9559 },
+      { nombre: "Tabasco", lat: 17.9895, lon: -92.9475 },
+      { nombre: "Tamaulipas", lat: 23.7417, lon: -99.1453 },
+      { nombre: "Tlaxcala", lat: 19.3182, lon: -98.2375 },
+      { nombre: "Veracruz", lat: 19.5438, lon: -96.9103 },
+      { nombre: "Yucatán", lat: 20.9674, lon: -89.5926 },
+      { nombre: "Zacatecas", lat: 22.7709, lon: -102.5833 },
+      { nombre: "Ciudad de México", lat: 19.4326, lon: -99.1332 }
+    ];
+
+    const contenedor = document.getElementById("contenedor");
+    const buscador = document.getElementById("buscador");
+    const btnBuscar = document.getElementById("btnBuscar");
+    let cards = [];
+
+    const codigosClima = {
+      0: "☀️ Despejado",
+      1: "🌤️ Contrastado despejado",
+      2: "⛅ Parcialmente nublado",
+      3: "☁️ Nublado",
+      45: "🌫️ Niebla",
+      48: "🌫️❄️ Niebla con escarcha",
+      51: "🌦️ Llovizna ligera",
+      61: "🌧️ Lluvia moderada",
+      63: "🌧️🌧️ Lluvia fuerte",
+      71: "❄️ Nieve ligera",
+      80: "🌦️ Chubascos",
+      95: "⛈️ Tormenta eléctrica"
+    };
+
+    async function obtenerClima(lat, lon) {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=America/Mexico_City`;
+      const res = await fetch(url);
+      return res.json();
+    }
+
+    async function mostrarClimas() {
+      for (const estado of estados) {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `<h3>${estado.nombre}</h3><p>Cargando...</p>`;
+        contenedor.appendChild(card);
+        cards.push({elemento: card, nombre: estado.nombre.toLowerCase(), lat: estado.lat, lon: estado.lon});
+
+        try {
+          const data = await obtenerClima(estado.lat, estado.lon);
+          const temp = data.current_weather.temperature.toFixed(1);
+          const desc = codigosClima[data.current_weather.weathercode] || "Desconocido";
+          const viento = data.current_weather.windspeed;
+
+          card.innerHTML = `
+            <h3>${estado.nombre}</h3>
+            <p class="temp">${temp}°C</p>
+            <p>${desc}</p>
+            <p>🌬️ Viento: ${viento} km/h</p>
+          `;
+        } catch(e) {
+          card.innerHTML = `<h3>${estado.nombre}</h3><p>No disponible ❌</p>`;
+        }
+      }
+    }
+
+    async function actualizarClimas() {
+      for (const cardObj of cards) {
+        try {
+          const data = await obtenerClima(cardObj.lat, cardObj.lon);
+          const temp = data.current_weather.temperature.toFixed(1);
+          const desc = codigosClima[data.current_weather.weathercode] || "Desconocido";
+          const viento = data.current_weather.windspeed;
+
+          cardObj.elemento.querySelector(".temp").textContent = `${temp}°C`;
+          cardObj.elemento.querySelector("p:nth-of-type(2)").textContent = desc;
+          cardObj.elemento.querySelector("p:nth-of-type(3)").textContent = `🌬️ Viento: ${viento} km/h`;
+        } catch {}
+      }
+    }
+
+    async function buscarEstado() {
+      const busqueda = buscador.value.toLowerCase().trim();
+      if (!busqueda) return;
+
+      cards.forEach(card => card.elemento.classList.remove("resaltado"));
+
+      const resultado = cards.find(card => card.nombre === busqueda);
+      if (resultado) {
+        resultado.elemento.classList.add("resaltado");
+        contenedor.prepend(resultado.elemento);
+        resultado.elemento.scrollIntoView({behavior:"smooth", block:"center"});
+
+        // Widget extendido
+        try {
+          const data = await obtenerClima(resultado.lat, resultado.lon);
+          let widgetHTML = `<div class="widget"><h4>Pronóstico 5 días</h4>`;
+          for (let i = 0; i < 5; i++) {
+            const day = data.daily.time[i];
+            const max = data.daily.temperature_2m_max[i].toFixed(1);
+            const min = data.daily.temperature_2m_min[i].toFixed(1);
+            const code = data.daily.weathercode[i];
+            const icon = codigosClima[code] || "Desconocido";
+            widgetHTML += `<div class="widget-day"><span>${day}</span><span>${icon} ${min}°C / ${max}°C</span></div>`;
+          }
+          widgetHTML += `</div>`;
+
+          // Quitar widget previo si existía
+          const prevWidget = resultado.elemento.querySelector(".widget");
+          if (prevWidget) prevWidget.remove();
+
+          resultado.elemento.insertAdjacentHTML("beforeend", widgetHTML);
+        } catch(e) {
+          console.log("Error cargando widget extendido", e);
+        }
+      } else {
+        alert("Estado no encontrado");
+      }
+    }
+
+    btnBuscar.addEventListener("click", buscarEstado);
+    buscador.addEventListener("keypress", e => { if(e.key==="Enter") buscarEstado(); });
+
+    mostrarClimas();
+    setInterval(actualizarClimas, 10*60*1000); // Actualiza cada 10 minutos
+  </script>
+</body>
+</html>
